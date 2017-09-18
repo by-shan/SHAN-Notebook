@@ -1,0 +1,94 @@
+---
+title: "PLOT_butterfly"
+author: "Boyao SHAN"
+date: "August 17, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## PLOT Notebook
+
+This is SHAN's NoteBook for some graphics creation by using SAS Graphic Template Language (GTL) based on SAS 9.4. 
+
+## Data Structure for Graphic
+SAS 9.4 Work.Butterfly dataset
+
+Age     | Male      | Female     | case      | control    | m2          | f2 
+--------|-----------|------------|-----------|------------|-------------|------------
+10      | 48        |   48       | -48       |   48       | 39.03       | 5.88
+12      | 52        |   54       | -52       |   54       | 27.53       | 40.59
+14      | 62        |   63       | -62       |   63       | 6.16        | 58.06                              
+16      | 69        |   65       | -69       |   65       | 6.53        | 1.16    
+18      | 70        |   65       | -70       |   65       | 16.16       | 49.22     
+
+## Demo Image
+
+![Butterfly Bar Charts by SAS 9.4](figures/butterfly.png)
+
+
+
+## SAS Template Code
+
+```{r egine = 'sas',engine.path="C:/Program Files/SASHome/SASFoundation/9.4/sas.exe", eval = FALSE, hilang = 'sas'}
+
+proc template;
+define statgraph sgdesign;
+dynamic _AGE _FEMALE _AGE2 _MALE;
+begingraph / designwidth=1417 designheight=755 backgroundcolor=CXFFFFFF;
+  ## tittle & footnotes ##;
+   entrytitle halign=left 'Tittle 1' / textattrs=(size=14 );
+   entryfootnote halign=left 'footnote1  ';
+   entryfootnote halign=left 'footnote2';
+   entryfootnote halign=left 'footnote3';
+   entrytitle halign=right 'Tittle2';
+   entrytitle halign=left 'Tittle3' / textattrs=(color=CXFF0000 family='Lucida Sans Unicode'  
+                                        style=italic weight=normal );
+   entrytitle halign=center 'Tittle4';
+   entrytitle halign=left 'Tittle5';
+
+  ## layout design ##;
+   layout lattice / rowdatarange=data columndatarange=data columns=2 
+                    rowgutter=10 columngutter=10 columnweights=(0.5 0.5);
+      layout overlay / wallcolor=CXE8E6E8 xaxisopts=( reverse=true griddisplay=on)
+                       yaxisopts=( display=(LINE) discreteopts=( tickvaluefitpolicy=none));
+         barchart category=_AGE response=_FEMALE / 
+                       name='bar(h)' datatransparency=0.5 stat=mean orient=horizontal 
+                       discreteoffset=0.0 groupdisplay=Cluster clusterwidth=1.0;
+         discretelegend 'bar(h)' / 
+                       opaque=false border=true halign=left valign=bottom displayclipped=true 
+                       across=1 order=rowmajor location=inside;
+         discretelegend 'bar(h)' / 
+                       opaque=false border=true halign=left valign=bottom displayclipped=true 
+                       across=1 order=rowmajor location=inside;
+      endlayout;
+      layout overlay / xaxisopts=( griddisplay=on) yaxisopts=( display=(TICKVALUES LINE) 
+                       discreteopts=( tickvaluefitpolicy=none));
+         barchart category=_AGE2 response=_MALE / 
+                       name='bar(h)2' datatransparency=0.5 stat=mean orient=horizontal discreteoffset=0.0  
+                       groupdisplay=Cluster clusterwidth=1.0 fillattrs=GraphData2(color=CXEF828B );
+         discretelegend 'bar(h)2' / 
+                       opaque=false border=true halign=right valign=bottom displayclipped=true 
+                       across=1 order=rowmajor location=inside;
+      endlayout;
+                       
+    ## lengend ##;                   
+      sidebar / align=bottom spacefill=false;  
+         discretelegend 'bar(h)' 'bar(h)2' / opaque=true border=true halign=center valign=center
+                       displayclipped=true order=rowmajor;
+      endsidebar;
+   endlayout;
+endgraph;
+end;
+run;
+
+proc sgrender data=WORK.BUTTERFLY template=sgdesign;
+dynamic _AGE="AGE" _FEMALE="FEMALE" _AGE2="AGE" _MALE="MALE";
+run;
+
+
+
+```
+

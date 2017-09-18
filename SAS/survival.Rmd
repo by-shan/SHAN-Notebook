@@ -1,0 +1,178 @@
+---
+title: "PLOT_survival"
+author: "Boyao"
+date: "August 22, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## PLOT Notebook
+
+This is SHAN's NoteBook for some graphics creation by using SAS Graphic Template Language (GTL) based on SAS 9.4. 
+
+## Survival Plot (Part1: Proc lifetest)
+```{r egine = 'sas',engine.path="C:/Program Files/SASHome/SASFoundation/9.4/sas.exe", eval = FALSE, hilang = 'sas'}
+
+proc format;
+      value risk 1='ALL' 2='AML-Low Risk' 3='AML-High Risk';
+    
+data BMT;
+  input Group T Status @@;
+  format Group risk.;
+  label T='Disease Free Time';
+  datalines;
+   1 2081 0 1 1602 0 1 1496 0 1 1462 0 1 1433 0  
+   1 1377 0 1 1330 0 1  996 0 1  226 0 1 1199 0
+   1 1111 0 1  530 0 1 1182 0 1 1167 0 1  418 1
+   1  383 1 1  276 1 1  104 1 1  609 1 1  172 1
+   1  487 1 1  662 1 1  194 1 1  230 1 1  526 1
+   1  122 1 1  129 1 1   74 1 1  122 1 1   86 1
+   1  466 1 1  192 1 1  109 1 1   55 1 1    1 1
+   1  107 1 1  110 1 1  332 1 2 2569 0 2 2506 0
+   2 2409 0 2 2218 0 2 1857 0 2 1829 0 2 1562 0
+   2 1470 0 2 1363 0 2 1030 0 2  860 0 2 1258 0
+   2 2246 0 2 1870 0 2 1799 0 2 1709 0 2 1674 0
+   2 1568 0 2 1527 0 2 1324 0 2  957 0 2  932 0
+   2  847 0 2  848 0 2 1850 0 2 1843 0 2 1535 0
+   2 1447 0 2 1384 0 2  414 1 2 2204 1 2 1063 1
+   2  481 1 2  105 1 2  641 1 2  390 1 2  288 1
+   2  421 1 2   79 1 2  748 1 2  486 1 2   48 1
+   2  272 1 2 1074 1 2  381 1 2   10 1 2   53 1
+   2   80 1 2   35 1 2  248 1 2  704 1 2  211 1
+   2  219 1 2  606 1 3 2640 0 3 2430 0 3 2252 0
+   3 2140 0 3 2133 0 3 1238 0 3 1631 0 3 2024 0
+   3 1345 0 3 1136 0 3  845 0 3  422 1 3  162 1
+   3   84 1 3  100 1 3    2 1 3   47 1 3  242 1
+   3  456 1 3  268 1 3  318 1 3   32 1 3  467 1
+   3   47 1 3  390 1 3  183 1 3  105 1 3  115 1
+   3  164 1 3   93 1 3  120 1 3   80 1 3  677 1
+   3   64 1 3  168 1 3   74 1 3   16 1 3  157 1
+   3  625 1 3   48 1 3  273 1 3   63 1 3   76 1
+   3  113 1 3  363 1
+   ;
+   
+ods graphics on;
+proc lifetest data=BMT plots=survival(atrisk=0 to 2500 by 500);
+  time T * Status(0);
+  strata Group / test=logrank adjust=sidak;
+  run;
+
+```
+
+## Demo Image
+
+![Survival Plot by SAS 9.4](figures/survival.png)
+
+## SAS GTL Template
+
+### Data Structure Modified for GTL
+
+```{r egine = 'sas',engine.path="C:/Program Files/SASHome/SASFoundation/9.4/sas.exe", eval = FALSE, hilang = 'sas'}
+ods graphics on;
+ods output ProductLimitEstimates = figdata; 
+proc lifetest data=BMT plots=survival(atrisk=0 to 2500 by 500);
+  time T * Status(0);
+  strata Group / test=logrank adjust=sidak;
+run;
+ods graphics off;
+
+data figdata;
+  set figdata;
+  by stratum t;
+  retain tmp lag;
+  if ^missing(survival) then tmp=survival;
+  if missing(survival) then censored=tmp;
+
+  lag=lag(left);
+  if T=0 then do; tatrisk=0; atrisk=left; end;
+  if T>=500 & lag(T)<500 then do; tatrisk=500; atrisk=lag; end;
+  if T>=1000 & lag(T)<1000 then do; tatrisk=1000; atrisk=lag; end;
+  if T>=1500 & lag(T)<1500 then do; tatrisk=1500; atrisk=lag; end;
+  if T>=2000 & lag(T)<2000 then do; tatrisk=2000; atrisk=lag; end;  
+  if T>=2500 & lag(T)<2500 then do; tatrisk=2500; atrisk=lag; end;
+  drop tmp lag;
+run;
+
+```
+
+
+
+
+```{r egine = 'sas',engine.path="C:/Program Files/SASHome/SASFoundation/9.4/sas.exe", eval = FALSE, hilang = 'sas'}
+
+## template1 ##;
+proc template;
+define statgraph sgdesign;
+dynamic _T3 _CENSORED2 _T5 _CENSORED3 _T6 _SURVIVAL3 _GROUP5 _GROUP _GROUP2;
+begingraph / designwidth=976 designheight=571;
+   entrytitle halign=center 'Type in your title...';
+   entryfootnote halign=left 'Type in your footnote...';
+   layout lattice / rowdatarange=data columndatarange=data rowgutter=10 columngutter=10;
+      layout overlay / xaxisopts=( griddisplay=on) yaxisopts=( label=('Survival Probability'));
+         stepplot x=_T6 y=_SURVIVAL3 / group=_GROUP5 curvelabel=_GROUP2 name='step' display=(markers) 
+                                       connectorder=xaxis grouporder=data clusterwidth=0.5;
+         scatterplot x=_T5 y=_CENSORED3 / name='scatter2' legendlabel='Censored' markerattrs=(symbol=PLUS );
+         scatterplot x=_T3 y=_CENSORED2 / group=_GROUP name='scatter' markerattrs=(symbol=PLUS );
+         discretelegend 'scatter2' / opaque=false border=true halign=right valign=top displayclipped=true 
+                                     across=1 order=rowmajor location=inside;
+		   referenceline y=0;
+         innermargin;
+           blockplot x=tatrisk block=atrisk / class=GROUP display=(values label)
+                     valuehalign=start valueattrs=(size=8) labelattrs=(size=8);
+         endinnermargin;
+         discretelegend 'step';
+      endlayout;
+/*      sidebar / align=bottom spacefill=false;*/
+/*         discretelegend 'step' / opaque=true border=true halign=center valign=center title='Group:' */
+/*                                 displayclipped=true order=rowmajor;*/
+/*      endsidebar;*/
+   endlayout;
+endgraph;
+end;
+run;
+                     
+## template 2 ##;
+
+proc template;
+define statgraph sgdesign;
+dynamic _T3 _CENSORED2 _T5 _CENSORED3 _T6 _SURVIVAL3 _GROUP5 _GROUP _GROUP2;
+begingraph / designwidth=976 designheight=571;
+   entrytitle halign=center 'Type in your title...';
+   entryfootnote halign=left 'Type in your footnote...';
+   layout lattice / rowdatarange=data columndatarange=data rowgutter=10 columngutter=10 rowweights=(0.87 0.13);
+      layout overlay / xaxisopts=( griddisplay=on) yaxisopts=( label=('Survival Probability'));
+         stepplot x=_T6 y=_SURVIVAL3 / group=_GROUP5 curvelabel=_GROUP2 name='step' display=(markers) 
+                                       connectorder=xaxis grouporder=data clusterwidth=0.5;
+         scatterplot x=_T5 y=_CENSORED3 / name='scatter2' legendlabel='Censored' markerattrs=(symbol=PLUS );
+         scatterplot x=_T3 y=_CENSORED2 / group=_GROUP name='scatter' markerattrs=(symbol=PLUS );
+         discretelegend 'scatter2' / opaque=false border=true halign=right valign=top displayclipped=true 
+                                     across=1 order=rowmajor location=inside;
+         discretelegend 'step';
+      endlayout;
+/*      sidebar / align=bottom spacefill=false;*/
+/*         discretelegend 'step' / opaque=true border=true halign=center valign=center title='Group:' */
+/*                                 displayclipped=true order=rowmajor;*/
+/*      endsidebar;*/
+	  layout overlay / xaxisopts=(display=none) walldisplay=none
+                         yaxisopts=(display=(tickvalues label) tickvalueattrs=(size=8) type = discrete
+                                    DISCRETEOPTS=(tickvaluelist=("ALL" "AML-High Risk" "AML-Low Risk") tickvaluefitpolicy=none));
+	    scatterplot x=tatrisk y=GROUP / group=GROUP  markercharacter=atrisk
+                      markercharacterattrs=(size=8);
+        endlayout;
+   endlayout;
+endgraph;
+end;
+run;
+                     
+
+## sgrender
+proc sgrender data=WORK.figdata template=sgdesign;
+dynamic _T3="T" _CENSORED2="CENSORED" _T5="T" _CENSORED3="CENSORED" _T6="T" _SURVIVAL3="SURVIVAL" _GROUP5="GROUP" _GROUP="GROUP" _GROUP2="GROUP";
+run;
+
+```
+
+
